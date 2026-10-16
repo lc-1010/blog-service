@@ -87,6 +87,7 @@ func (t Tag) Create(c *gin.Context) {
 	if err != nil {
 		global.Logger.Errorf(c, "svc.CrateTag err: %v", err)
 		respone.ToErrorResponse(errcode.ErrorCreateTagFail)
+		return
 	}
 	respone.ToResponse(gin.H{})
 }
@@ -102,11 +103,22 @@ func (t Tag) Update(c *gin.Context) {
 	param := service.UpdateTagRequest{}
 	response := app.NewResponse(c)
 
+	uriParam := struct {
+		ID uint32 `uri:"id" binding:"required,gte=1"`
+	}{}
+	if err := c.ShouldBindUri(&uriParam); err != nil {
+		global.Logger.Errorf(c, "c.ShouldBindUri err: %v", err)
+		response.ToErrorResponse(errcode.InvalidParams.WithDetails(err.Error()))
+		return
+	}
+
 	valid, errs := app.BindAndValid(c, &param)
 	if !valid {
 		global.Logger.Errorf(c, "app.BindAndValid err :%v", errs)
-		response.ToErrorResponse(errcode.ErrorUpdateTagFail.WithDetails(errs.Errors()...))
+		response.ToErrorResponse(errcode.InvalidParams.WithDetails(errs.Errors()...))
+		return
 	}
+	param.ID = uriParam.ID
 
 	svc := service.New(c.Request.Context())
 	err := svc.UpdateTag(&param)

@@ -47,8 +47,7 @@ func (d *Dao) UpdateTag(id uint32, name string, state uint8, modifiedBy string) 
 		values["name"] = name
 	}
 
-	tag.Update(d.engine, values)
-	return nil
+	return tag.Update(d.engine, values)
 }
 func (d *Dao) DeleteTag(id uint32) error {
 	tag := model.BlogTag{Model: &model.Model{

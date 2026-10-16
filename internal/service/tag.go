@@ -1,9 +1,13 @@
 package service
 
 import (
+	"errors"
+
 	"blog-server/internal/model"
 	"blog-server/pkg/app"
 	"blog-server/pkg/errcode"
+
+	"gorm.io/gorm"
 )
 
 type ConutTagRequest struct {
@@ -23,7 +27,7 @@ type CrateTagRquest struct {
 }
 
 type UpdateTagRequest struct {
-	ID         uint32 `form:"id" binding:"required,gte=1"`
+	ID         uint32 `json:"-" form:"-" binding:"-"`
 	Name       string `form:"name,omitempty" binding:"max=100"`
 	State      uint8  `form:"state,default=1" binding:"oneof=0 1" `
 	ModifiedBy string `form:"modified_by" binding:"required,min=3,max=100"`
@@ -44,10 +48,10 @@ func (svc *Service) GetTagList(param *GetTagListRequest, pager *app.Pager) ([]*m
 
 func (svc *Service) CrateTag(param *CrateTagRquest) error {
 	tag, err := svc.dao.CheckName(param.Name)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	if tag.ID != 0 {
+	if err == nil && tag.ID != 0 {
 		return errcode.ErrorCrateTagExists
 	}
 	return svc.dao.CreateTag(param.Name, param.State, param.CreatedBy)

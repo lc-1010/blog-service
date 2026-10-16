@@ -35,7 +35,9 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	s.ListenAndServe()
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server.ListenAndServe err: %v", err)
+	}
 }
 
 var trans ut.Translator
