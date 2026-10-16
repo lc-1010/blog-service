@@ -1,0 +1,419 @@
+definitions:
+  app.Pager:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_rows:
+        type: integer
+    type: object
+  errcode.Error:
+    type: object
+  model.ArticleSwagger:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/model.BlogArticle'
+        type: array
+      pager:
+        $ref: '#/definitions/app.Pager'
+    type: object
+  model.BlogArticle:
+    properties:
+      cover_image_url:
+        description: 封面图片地址
+        type: string
+      created_by:
+        description: 创建人
+        type: string
+      created_on:
+        description: 创建时间
+        type: integer
+      deleted_on:
+        description: 删除时间
+        type: integer
+      desc:
+        description: 文章简述
+        type: string
+      id:
+        description: id
+        type: integer
+      is_del:
+        description: 是否删除 0 未删 ， 1 已删
+        type: integer
+      modified_by:
+        description: 修改人
+        type: string
+      modified_on:
+        description: 修改时间
+        type: integer
+      state:
+        description: 状态 0 禁用，1 启用
+        type: integer
+      title:
+        type: string
+    type: object
+  model.BlogTag:
+    properties:
+      created_by:
+        description: 创建人
+        type: string
+      created_on:
+        description: 创建时间
+        type: integer
+      deleted_on:
+        description: 删除时间
+        type: integer
+      id:
+        description: id
+        type: integer
+      is_del:
+        description: 是否删除 0 未删 ， 1 已删
+        type: integer
+      modified_by:
+        description: 修改人
+        type: string
+      modified_on:
+        description: 修改时间
+        type: integer
+      name:
+        type: string
+      state:
+        type: integer
+    type: object
+  model.CreateArticle:
+    properties:
+      content:
+        description: 文章内容"`
+        type: string
+      cover_image_url:
+        description: 封面图片地址"`
+        type: string
+      created_by:
+        description: 创建者"`
+        type: string
+      desc:
+        description: 文章简述"`
+        type: string
+      state:
+        description: 状态"`
+        type: integer
+      tag_id:
+        description: 标签ID
+        type: integer
+      title:
+        description: 文章标题"`
+        type: string
+    type: object
+  model.TagSwagger:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/model.BlogTag'
+        type: array
+      pager:
+        $ref: '#/definitions/app.Pager'
+    type: object
+  model.UpdateArticle:
+    properties:
+      content:
+        description: 文章内容"`
+        type: string
+      cover_image_url:
+        description: 封面图片地址"`
+        type: string
+      created_by:
+        description: 创建者"`
+        type: string
+      desc:
+        description: 文章简述"`
+        type: string
+      modified_by:
+        description: '"修改人"'
+        type: string
+      state:
+        description: 状态"`
+        type: integer
+      tag_id:
+        description: 标签ID
+        type: integer
+      title:
+        description: 文章标题"`
+        type: string
+    type: object
+  model.UpdateTagRequest:
+    properties:
+      created_by:
+        description: 创建者
+        maxLength: 100
+        minLength: 3
+        type: string
+      id:
+        description: 文章id"
+        type: integer
+      name:
+        description: 标签名称
+        maxLength: 100
+        type: string
+      state:
+        description: 标签状态
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: 博客后台
+  title: 博客
+  version: "1.0"
+paths:
+  /api/v1/articles:
+    get:
+      parameters:
+      - description: 文章名
+        in: query
+        name: name
+        type: string
+      - description: 标签ID
+        in: query
+        name: tag_id
+        type: integer
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: paage_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.ArticleSwagger'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 获取多篇文章
+    post:
+      parameters:
+      - description: 创建文章
+        in: body
+        name: requset
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateArticle'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogArticle'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 创建文章
+    put:
+      parameters:
+      - description: 更新文章
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateArticle'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 更新文章
+  /api/v1/articles/{id}:
+    delete:
+      parameters:
+      - description: 文章id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 状态
+        in: body
+        name: state
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 删除文章
+    get:
+      parameters:
+      - description: 文章id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogArticle'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 获取单独文章
+  /api/v1/tags:
+    get:
+      parameters:
+      - description: 标签名
+        in: query
+        maxLength: 100
+        name: name
+        type: string
+      - default: 1
+        description: 状态
+        enum:
+        - 0
+        - 1
+        in: query
+        name: state
+        type: integer
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: paage_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.TagSwagger'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 获取多个标签
+    post:
+      parameters:
+      - description: 标签信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateTagRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogTag'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 创建标签
+    put:
+      parameters:
+      - description: 标签信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateTagRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogTag'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 更新标签
+  /api/v1/tags/{id}:
+    delete:
+      parameters:
+      - description: 标签id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 删除标签
+swagger: "2.0"
