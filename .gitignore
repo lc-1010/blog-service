@@ -1,2 +1,5 @@
 .DS_Store
 storage/logs/*.log
+datasets/*.sqlite
+datasets/*.sqlite-journal
+__pycache__/

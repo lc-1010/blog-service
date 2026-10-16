@@ -1,5 +1,16 @@
 # blog
 
+## 演示数据与 SQLite 测试
+
+项目提供可复现的 SQLite 演示数据导入器，包含去标识的零售订单、明确标记为 synthetic 的演示文章，以及唐诗作者、文章和分类数据。数据来源、许可、结构映射、隐私处理和运行方式见 [datasets/README.md](./datasets/README.md)。
+
+```sh
+python3 -m unittest discover -s datasets -p 'test_*.py' -v
+python3 datasets/import_datasets.py --db datasets/blog-demo.sqlite --max-rows 10000
+```
+
+导入器默认最多读取 UCI 零售 CSV 的前 10,000 行，并导入固定 revision 的全部唐诗数据；SQLite 文件被 Git 忽略，不会将原始零售数据或顾客编号提交到仓库。
+
 ```
 .
 ├── configs
