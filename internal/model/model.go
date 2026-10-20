@@ -13,7 +13,7 @@ import (
 
 type Model struct {
 	// id
-	ID uint32 `gorm:"primary_key" json:"id"`
+	ID uint32 `gorm:"primaryKey" json:"id"`
 	// 创建时间
 	CreatedOn uint32 `json:"created_on"`
 	// 创建人

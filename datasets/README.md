@@ -33,10 +33,11 @@
 ## 导入和测试
 
 ```sh
+go test ./...
 python3 datasets/import_datasets.py --db datasets/blog-demo.sqlite --max-rows 10000
 python3 -m unittest discover -s datasets -p 'test_*.py' -v
 ```
 
 默认不覆盖已有数据库；确认需要重建时加 `--replace`。也可通过 `--retail-csv` 和 `--tang-json` 使用本地文件。
 
-测试使用内存 SQLite 和合成小样本，不访问网络、不使用真实顾客标识。脚本依赖 Python 标准库。
+Python 导入器测试使用内存 SQLite 和合成小样本，不访问网络、不使用真实顾客标识。Go DAO/service/API 集成测试也使用独立的内存 SQLite 数据库，不连接 MySQL。脚本依赖 Python 标准库。

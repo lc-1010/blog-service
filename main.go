@@ -24,6 +24,19 @@ import (
 // @version 1.0
 // @description 博客后台
 func main() {
+	err := setupSetting()
+	if err != nil {
+		log.Fatalf("setupSetting err:%v", err)
+	}
+	err = setupDBEngine()
+	if err != nil {
+		log.Fatalf("setupDBEngine err:%v", err)
+	}
+	err = setupLogger()
+	if err != nil {
+		log.Fatalf("setupLogger err:%v", err)
+	}
+
 	gin.SetMode(global.ServerSetting.RunMode)
 
 	router := routers.NewRouter()
@@ -43,22 +56,6 @@ func main() {
 var trans ut.Translator
 
 func init() {
-
-	err := setupSetting()
-	if err != nil {
-		log.Fatalf("init.setupSetting err:%v", err)
-	}
-
-	err = setupDBEngine()
-	if err != nil {
-		log.Fatalf("init.setupDBEngine err:%v", err)
-	}
-
-	err = setupLogger()
-	if err != nil {
-		log.Fatalf("init.setupLogger err:%v", err)
-	}
-
 	uni := ut.New(zh.New())
 	trans, _ = uni.GetTranslator("zh")
 	v, ok := binding.Validator.Engine().(*validator.Validate)

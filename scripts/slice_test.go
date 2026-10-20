@@ -236,19 +236,18 @@ func createObjsOne(n int) []*Obj {
 
 var (
 	execTime time.Duration = time.Second
-	wg       sync.WaitGroup
 )
 
 // 考察select 处理后无法退出 channel 阻塞的坑
 func finishReq(timeout time.Duration) int {
-	ch := make(chan int) //增加容量
-	wg.Add(1)
+	ch := make(chan int, 1)
 	go func() {
-		defer wg.Done()
-		time.Sleep(execTime)
+		timer := time.NewTimer(execTime)
+		defer timer.Stop()
+		<-timer.C
 		ch <- 42
 	}()
-	select { //
+	select {
 	case result := <-ch:
 		return result
 	case <-time.After(timeout):
@@ -260,7 +259,6 @@ func finishReq(timeout time.Duration) int {
 func TestFinsh(t *testing.T) {
 	timeout := 50 * time.Millisecond //时间过短
 	t.Logf("finishReq: %d", finishReq(timeout))
-	wg.Wait()
 }
 
 func stopCh() {
