@@ -9,6 +9,8 @@ type BlogArticle struct {
 	Desc string `json:"desc"`
 	// 封面图片地址
 	CoverImageUrl string `json:"cover_image_url"`
+	Content       string `json:"content" gorm:"type:longtext"`
+	TagID         uint32 `json:"tag_id" gorm:"-"`
 	// 状态 0 禁用，1 启用
 	State uint8 `json:"state"`
 }
@@ -18,25 +20,27 @@ func (model BlogArticle) TableName() string {
 }
 
 type CreateArticle struct {
-	TagID         uint32 `json:"tag_id"`          // 标签ID
-	Title         string `json:"title"`           // 文章标题"`
-	Desc          string `json:"desc"`            // 文章简述"`
-	CoverImageUrl string `json:"cover_image_url"` // 封面图片地址"`
-	Content       string `json:"content"`         // 文章内容"`
-	CreatedBy     string `json:"created_by"`      // 创建者"`
-	State         uint8  `json:"state"`           // 状态"`
+	TagID         uint32 `json:"tag_id" binding:"required"`
+	Title         string `json:"title" binding:"required,min=2,max=100"`
+	Desc          string `json:"desc" binding:"max=255"`
+	CoverImageUrl string `json:"cover_image_url" binding:"omitempty,url"`
+	Content       string `json:"content" binding:"required,min=1"`
+	CreatedBy     string `json:"created_by" binding:"required,min=2,max=100"`
+	State         *uint8 `json:"state" binding:"omitempty,oneof=0 1"`
 }
 
 type UpdateArticle struct {
-	TagID         uint32 `json:"tag_id,omitempty"` // 标签ID
-	Title         string `json:"title,omitempty"`  // 文章标题"`
-	Desc          string `json:"desc,omitempty"`   // 文章简述"`
-	CoverImageUrl string `json:"cover_image_url"`  // 封面图片地址"`
-	Content       string `json:"content"`          // 文章内容"`
-	CreatedBy     string `json:"created_by"`       // 创建者"`
-	State         uint8  `json:"state,omitempty"`  // 状态"`
-	ModifiedBy    string `json:"modified_by"`      //"修改人"
+	TagID         uint32 `json:"tag_id" binding:"required"`
+	Title         string `json:"title" binding:"required,min=2,max=100"`
+	Desc          string `json:"desc" binding:"max=255"`
+	CoverImageUrl string `json:"cover_image_url" binding:"omitempty,url"`
+	Content       string `json:"content" binding:"required,min=1"`
+	ModifiedBy    string `json:"modified_by" binding:"required,min=2,max=100"`
+}
 
+type UpdateArticleState struct {
+	State      *uint8 `json:"state" binding:"required,oneof=0 1"`
+	ModifiedBy string `json:"modified_by" binding:"required,min=2,max=100"`
 }
 
 type ArticleSwagger struct {

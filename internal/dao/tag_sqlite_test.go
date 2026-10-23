@@ -70,6 +70,13 @@ func TestTagCRUDWithSQLite(t *testing.T) {
 	if _, err := dao.CheckName("golang"); !errors.Is(err, gorm.ErrRecordNotFound) {
 		t.Fatalf("check deleted tag error = %v, want record not found", err)
 	}
+	var deleted model.BlogTag
+	if err := dao.engine.Unscoped().First(&deleted, updated.ID).Error; err != nil {
+		t.Fatalf("deleted tag should be retained: %v", err)
+	}
+	if deleted.IsDel != 1 || deleted.DeletedOn == 0 {
+		t.Fatalf("tag was not soft-deleted: %+v", deleted)
+	}
 }
 
 func TestUpdateTagReturnsDatabaseError(t *testing.T) {

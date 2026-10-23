@@ -62,7 +62,7 @@ func (t BlogTag) Create(db *gorm.DB) error {
 
 func (t BlogTag) CheckName(db *gorm.DB) (BlogTag, error) {
 	var tag BlogTag
-	err := db.Where("name = ?", t.Name).First(&tag).Error
+	err := db.Where("name = ? AND is_del = ?", t.Name, 0).First(&tag).Error
 	if err != nil {
 		return tag, err
 	}

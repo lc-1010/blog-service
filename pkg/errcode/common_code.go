@@ -71,6 +71,8 @@ func (e *Error) StatusCode() int {
 		return http.StatusInternalServerError
 	case InvalidParams.Code():
 		return http.StatusBadRequest
+	case NotFound.Code():
+		return http.StatusNotFound
 	case UnauthoerizedTokeExists.Code():
 		fallthrough
 	case UnauthoerizedTokenError.Code():

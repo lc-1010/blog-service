@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+  <defs>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5e8df"/>
+      <stop offset="1" stop-color="#ece8da"/>
+    </linearGradient>
+    <linearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9e5d5"/>
+      <stop offset="1" stop-color="#b8c9b1"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#26352c" flood-opacity=".10"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .muted { fill: #8b9188; }
+      .ink { fill: #252c25; }
+      .small { font-size: 12px; }
+      .tiny { font-size: 10px; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1120" fill="#f4f3ee"/>
+  <text x="52" y="52" font-size="13" letter-spacing="2.4" fill="#71816e">BLOG SERVICE · FRONTEND CONCEPT</text>
+  <text x="52" y="96" font-size="30" font-weight="650" class="ink">一套内容，两种体验</text>
+  <text x="52" y="123" font-size="14" fill="#72786f">读者端：轻松发现与阅读　/　管理端：高效维护文章与标签</text>
+  <rect x="1372" y="47" width="176" height="34" rx="17" fill="#e7ebe2"/>
+  <circle cx="1392" cy="64" r="4" fill="#78906e"/>
+  <text x="1405" y="68" font-size="11" letter-spacing=".8" fill="#52664d">DESIGN DIRECTION 01</text>
+
+  <text x="52" y="163" font-size="12" font-weight="700" letter-spacing="1.5" fill="#71816e">01  PUBLIC BLOG</text>
+  <text x="822" y="163" font-size="12" font-weight="700" letter-spacing="1.5" fill="#71816e">02  CONTENT ADMIN</text>
+
+  <g filter="url(#shadow)">
+    <rect x="40" y="180" width="740" height="884" rx="14" fill="#fff" stroke="#e6e5df"/>
+    <rect x="40" y="180" width="740" height="38" rx="14" fill="#fafaf8"/>
+    <path d="M40 204v14h740v-14" fill="#fafaf8"/>
+    <circle cx="61" cy="199" r="5" fill="#e7a49b"/>
+    <circle cx="78" cy="199" r="5" fill="#e8cf91"/>
+    <circle cx="95" cy="199" r="5" fill="#9cc29d"/>
+    <rect x="245" y="189" width="330" height="20" rx="10" fill="#f0f0ec"/>
+    <text x="373" y="203" font-size="9" fill="#a2a59d">zhijian.blog</text>
+  </g>
+
+  <g>
+    <text x="72" y="255" font-size="21" font-weight="700" fill="#354433">纸间</text>
+    <text x="72" y="271" font-size="9" letter-spacing="1.4" fill="#9a9d91">WRITE A LITTLE, LIVE A LOT</text>
+    <text x="322" y="255" font-size="12" fill="#51584f">推荐</text>
+    <text x="376" y="255" font-size="12" fill="#858a80">文章</text>
+    <text x="430" y="255" font-size="12" fill="#858a80">专题</text>
+    <text x="484" y="255" font-size="12" fill="#858a80">标签</text>
+    <text x="538" y="255" font-size="12" fill="#858a80">关于</text>
+    <rect x="638" y="235" width="112" height="32" rx="16" fill="#f4f5f0"/>
+    <circle cx="655" cy="250" r="5" fill="none" stroke="#8b9188" stroke-width="1.4"/>
+    <path d="m659 254 4 4" stroke="#8b9188" stroke-width="1.4"/>
+    <text x="670" y="254" font-size="10" fill="#a0a49a">搜索文章</text>
+    <line x1="70" y1="284" x2="750" y2="284" stroke="#eeeee9"/>
+
+    <rect x="70" y="304" width="680" height="223" rx="12" fill="url(#hero)"/>
+    <rect x="98" y="328" width="76" height="20" rx="10" fill="#f1d5c8"/>
+    <text x="111" y="342" font-size="9" font-weight="700" letter-spacing=".8" fill="#a75e48">本周精选</text>
+    <text x="98" y="382" font-size="25" font-weight="700" fill="#29352a">重新发现生活里的</text>
+    <text x="98" y="415" font-size="25" font-weight="700" fill="#29352a">那些微小灵感</text>
+    <text x="98" y="444" font-size="11" fill="#697266">从日常出发，收集值得分享的想法与故事。</text>
+    <text x="98" y="478" font-size="9" font-weight="600" fill="#7d6558">纸间编辑部　·　专题策划</text>
+    <rect x="98" y="488" width="106" height="27" rx="14" fill="#455a45"/>
+    <text x="116" y="506" font-size="9" font-weight="600" fill="#fff">阅读本期　→</text>
+    <rect x="483" y="320" width="239" height="191" rx="8" fill="#d6a08b"/>
+    <path d="M503 342h198v147H503Z" fill="#e8c9b6"/>
+    <path d="M523 366h158v95H523Z" fill="#f4eee2"/>
+    <path d="M540 449c10-42 35-66 74-70 23 13 36 37 38 70-32 21-69 21-112 0Z" fill="#8c9b7c"/>
+    <path d="M596 461c2-49 13-88 37-117" fill="none" stroke="#56684f" stroke-width="3" stroke-linecap="round"/>
+    <path d="M613 395c-21-4-32-17-34-38 18-4 32 3 41 20M628 382c4-19 17-30 36-34 4 18-3 33-20 43" fill="#a8b597"/>
+    <circle cx="540" cy="354" r="9" fill="#b96f54"/>
+    <path d="M495 485h217" stroke="#bd7c64" stroke-width="2"/>
+    <text x="493" y="504" font-size="8" font-weight="600" fill="#fff8f0">ISSUE 01　·　SLOW LIVING</text>
+
+    <text x="72" y="565" font-size="16" font-weight="650" class="ink">编辑推荐</text>
+    <text x="703" y="565" font-size="10" fill="#7d8a73">全部文章　→</text>
+    <rect x="70" y="582" width="434" height="184" rx="10" fill="#fff" stroke="#eeeee8"/>
+    <rect x="84" y="596" width="142" height="156" rx="7" fill="url(#cover)"/>
+    <circle cx="155" cy="659" r="38" fill="#e7e6d6"/>
+    <path d="M117 716c9-38 31-57 66-58 12 17 14 37 4 60-25 14-49 13-70-2Z" fill="#82977a"/>
+    <path d="M157 728c4-42 13-73 29-95" fill="none" stroke="#5b7357" stroke-width="2.5"/>
+    <text x="245" y="617" font-size="9" font-weight="700" letter-spacing="1.2" fill="#819276">生活随笔</text>
+    <text x="245" y="645" font-size="15" font-weight="650" class="ink">给日常留一点空白</text>
+    <text x="245" y="670" font-size="10" fill="#80867c">慢下来，才发现那些被忽略的</text>
+    <text x="245" y="686" font-size="10" fill="#80867c">微小瞬间，也值得好好收藏。</text>
+    <text x="245" y="731" font-size="9" class="muted">2026.10.18　·　4 分钟阅读</text>
+
+    <text x="529" y="592" font-size="12" font-weight="650" class="ink">本周也在读</text>
+    <rect x="529" y="607" width="72" height="25" rx="12.5" fill="#edf1e9"/>
+    <text x="546" y="624" font-size="9" fill="#5f7459">效率工具</text>
+    <rect x="609" y="607" width="72" height="25" rx="12.5" fill="#f4eee4"/>
+    <text x="626" y="624" font-size="9" fill="#947c58">生活方式</text>
+    <rect x="689" y="607" width="50" height="25" rx="12.5" fill="#f1ecea"/>
+    <text x="699" y="624" font-size="9" fill="#967b73">阅读</text>
+    <line x1="529" y1="653" x2="750" y2="653" stroke="#eeeee9"/>
+    <text x="529" y="678" font-size="11" font-weight="650" class="ink">正在发生</text>
+    <text x="529" y="699" font-size="9" fill="#858a80">读者来信　·　秋日阅读清单</text>
+    <text x="529" y="714" font-size="9" fill="#858a80">下一期专题：重新整理生活</text>
+
+    <text x="72" y="803" font-size="14" font-weight="650" class="ink">最新文章</text>
+    <line x1="72" y1="817" x2="750" y2="817" stroke="#eeeee9"/>
+    <text x="78" y="841" font-size="10" font-weight="600" class="ink">01　读一本书，也是在整理自己的房间</text>
+    <text x="78" y="859" font-size="9" fill="#9a9e95">阅读　·　2026.10.12</text>
+    <text x="78" y="891" font-size="10" font-weight="600" class="ink">02　周末散步时，遇见一场迟来的秋天</text>
+    <text x="78" y="909" font-size="9" fill="#9a9e95">生活　·　2026.10.06</text>
+    <text x="78" y="941" font-size="10" font-weight="600" class="ink">03　写给还没开始的那个小计划</text>
+    <text x="78" y="959" font-size="9" fill="#9a9e95">随笔　·　2026.09.28</text>
+    <rect x="72" y="985" width="678" height="1" fill="#eeeee9"/>
+    <text x="72" y="1012" font-size="9" fill="#a2a69d">© 2026 纸间　·　用文字记录生活</text>
+    <text x="704" y="1012" font-size="9" fill="#a2a69d">RSS</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="820" y="180" width="740" height="884" rx="14" fill="#fff" stroke="#e6e5df"/>
+    <rect x="820" y="180" width="740" height="38" rx="14" fill="#fafaf8"/>
+    <path d="M820 204v14h740v-14" fill="#fafaf8"/>
+    <circle cx="841" cy="199" r="5" fill="#e7a49b"/>
+    <circle cx="858" cy="199" r="5" fill="#e8cf91"/>
+    <circle cx="875" cy="199" r="5" fill="#9cc29d"/>
+    <rect x="1025" y="189" width="330" height="20" rx="10" fill="#f0f0ec"/>
+    <text x="1150" y="203" font-size="9" fill="#a2a59d">admin.zhijian.blog</text>
+  </g>
+
+  <g>
+    <rect x="820" y="218" width="166" height="846" fill="#26332e"/>
+    <text x="846" y="255" font-size="18" font-weight="700" fill="#f5f5ef">纸间</text>
+    <text x="846" y="271" font-size="8" letter-spacing="1.4" fill="#aab7a9">CONTENT STUDIO</text>
+    <line x1="844" y1="291" x2="962" y2="291" stroke="#43514a"/>
+    <text x="847" y="321" font-size="9" letter-spacing="1" fill="#88988d">工作区</text>
+    <rect x="836" y="336" width="134" height="38" rx="7" fill="#3c4e44"/>
+    <rect x="851" y="349" width="12" height="11" rx="2" fill="none" stroke="#d8e0d3" stroke-width="1.3"/>
+    <line x1="854" y1="353" x2="860" y2="353" stroke="#d8e0d3"/>
+    <line x1="854" y1="357" x2="860" y2="357" stroke="#d8e0d3"/>
+    <text x="873" y="360" font-size="11" font-weight="600" fill="#fff">文章管理</text>
+    <rect x="851" y="390" width="12" height="11" rx="2" fill="none" stroke="#a4b1a7" stroke-width="1.2"/>
+    <text x="873" y="400" font-size="11" fill="#c1cbc1">标签管理</text>
+    <rect x="851" y="430" width="12" height="11" rx="2" fill="none" stroke="#a4b1a7" stroke-width="1.2"/>
+    <text x="873" y="440" font-size="11" fill="#c1cbc1">站点设置</text>
+    <line x1="844" y1="472" x2="962" y2="472" stroke="#43514a"/>
+    <circle cx="856" cy="1009" r="15" fill="#657a69"/>
+    <text x="851" y="1013" font-size="9" font-weight="700" fill="#fff">Z</text>
+    <text x="879" y="1007" font-size="10" fill="#f0f1eb">站点管理员</text>
+    <text x="879" y="1022" font-size="8" fill="#aab7a9">编辑者</text>
+    <text x="955" y="1013" font-size="12" fill="#aab7a9">···</text>
+
+    <rect x="986" y="218" width="574" height="846" fill="#fbfbf9"/>
+    <text x="1018" y="257" font-size="10" fill="#92988f">内容管理　/　文章</text>
+    <text x="1018" y="294" font-size="23" font-weight="650" class="ink">文章管理</text>
+    <text x="1018" y="317" font-size="10" fill="#858a80">管理、编辑并发布你的文章内容。</text>
+    <rect x="1423" y="274" width="112" height="34" rx="7" fill="#455a45"/>
+    <text x="1442" y="296" font-size="10" font-weight="600" fill="#fff">＋　新建文章</text>
+
+    <rect x="1018" y="339" width="160" height="66" rx="8" fill="#fff" stroke="#eeeee9"/>
+    <text x="1032" y="361" font-size="9" fill="#8d9389">全部文章</text>
+    <text x="1032" y="390" font-size="21" font-weight="650" class="ink">24</text>
+    <rect x="1188" y="339" width="160" height="66" rx="8" fill="#fff" stroke="#eeeee9"/>
+    <text x="1202" y="361" font-size="9" fill="#8d9389">已发布</text>
+    <text x="1202" y="390" font-size="21" font-weight="650" fill="#55734f">18</text>
+    <rect x="1358" y="339" width="177" height="66" rx="8" fill="#fff" stroke="#eeeee9"/>
+    <text x="1372" y="361" font-size="9" fill="#8d9389">草稿</text>
+    <text x="1372" y="390" font-size="21" font-weight="650" fill="#b18a51">6</text>
+
+    <rect x="1018" y="425" width="517" height="38" rx="7" fill="#fff" stroke="#e9e9e3"/>
+    <circle cx="1035" cy="444" r="5" fill="none" stroke="#969c92" stroke-width="1.3"/>
+    <path d="m1039 448 4 4" stroke="#969c92" stroke-width="1.3"/>
+    <text x="1051" y="448" font-size="10" fill="#a1a69d">搜索文章标题…</text>
+    <rect x="1295" y="432" width="103" height="25" rx="5" fill="#fff" stroke="#e9e9e3"/>
+    <text x="1307" y="448" font-size="9" fill="#72796f">全部状态　⌄</text>
+    <rect x="1406" y="432" width="115" height="25" rx="5" fill="#fff" stroke="#e9e9e3"/>
+    <text x="1418" y="448" font-size="9" fill="#72796f">全部标签　⌄</text>
+
+    <rect x="1018" y="480" width="517" height="42" rx="7" fill="#f1f3ee"/>
+    <text x="1032" y="506" font-size="9" font-weight="650" fill="#7f877c">文章标题</text>
+    <text x="1251" y="506" font-size="9" font-weight="650" fill="#7f877c">标签</text>
+    <text x="1351" y="506" font-size="9" font-weight="650" fill="#7f877c">状态</text>
+    <text x="1415" y="506" font-size="9" font-weight="650" fill="#7f877c">更新时间</text>
+    <text x="1513" y="506" font-size="9" font-weight="650" fill="#7f877c">操作</text>
+
+    <rect x="1018" y="522" width="517" height="66" fill="#fff"/>
+    <text x="1032" y="549" font-size="10" font-weight="600" class="ink">给日常留一点空白</text>
+    <text x="1032" y="568" font-size="8" fill="#a0a49b">ID: 1024</text>
+    <rect x="1251" y="541" width="44" height="20" rx="10" fill="#edf1e9"/>
+    <text x="1262" y="555" font-size="8" fill="#667b60">生活</text>
+    <circle cx="1360" cy="551" r="3" fill="#77956f"/>
+    <text x="1370" y="555" font-size="9" fill="#66815f">已发布</text>
+    <text x="1415" y="555" font-size="8" fill="#858a80">10.18 14:32</text>
+    <text x="1501" y="555" font-size="9" fill="#6d8068">编辑</text>
+    <line x1="1018" y1="588" x2="1535" y2="588" stroke="#efefe9"/>
+
+    <rect x="1018" y="589" width="517" height="66" fill="#fff"/>
+    <text x="1032" y="616" font-size="10" font-weight="600" class="ink">读一本书，也是在整理自己的房间</text>
+    <text x="1032" y="635" font-size="8" fill="#a0a49b">ID: 1023</text>
+    <rect x="1251" y="608" width="44" height="20" rx="10" fill="#f4eee4"/>
+    <text x="1262" y="622" font-size="8" fill="#917b56">阅读</text>
+    <circle cx="1360" cy="618" r="3" fill="#77956f"/>
+    <text x="1370" y="622" font-size="9" fill="#66815f">已发布</text>
+    <text x="1415" y="622" font-size="8" fill="#858a80">10.12 09:16</text>
+    <text x="1501" y="622" font-size="9" fill="#6d8068">编辑</text>
+    <line x1="1018" y1="655" x2="1535" y2="655" stroke="#efefe9"/>
+
+    <rect x="1018" y="656" width="517" height="66" fill="#fff"/>
+    <text x="1032" y="683" font-size="10" font-weight="600" class="ink">写给还没开始的那个小计划</text>
+    <text x="1032" y="702" font-size="8" fill="#a0a49b">ID: 1022</text>
+    <rect x="1251" y="675" width="44" height="20" rx="10" fill="#f1ecea"/>
+    <text x="1262" y="689" font-size="8" fill="#967b73">随笔</text>
+    <circle cx="1360" cy="685" r="3" fill="#d2a35b"/>
+    <text x="1370" y="689" font-size="9" fill="#a17e45">草稿</text>
+    <text x="1415" y="689" font-size="8" fill="#858a80">10.08 18:41</text>
+    <text x="1501" y="689" font-size="9" fill="#6d8068">编辑</text>
+    <line x1="1018" y1="722" x2="1535" y2="722" stroke="#efefe9"/>
+
+    <rect x="1018" y="723" width="517" height="66" fill="#fff"/>
+    <text x="1032" y="750" font-size="10" font-weight="600" class="ink">周末散步时，遇见一场迟来的秋天</text>
+    <text x="1032" y="769" font-size="8" fill="#a0a49b">ID: 1021</text>
+    <rect x="1251" y="742" width="44" height="20" rx="10" fill="#edf1e9"/>
+    <text x="1262" y="756" font-size="8" fill="#667b60">生活</text>
+    <circle cx="1360" cy="752" r="3" fill="#77956f"/>
+    <text x="1370" y="756" font-size="9" fill="#66815f">已发布</text>
+    <text x="1415" y="756" font-size="8" fill="#858a80">10.06 11:20</text>
+    <text x="1501" y="756" font-size="9" fill="#6d8068">编辑</text>
+    <line x1="1018" y1="789" x2="1535" y2="789" stroke="#efefe9"/>
+
+    <rect x="1018" y="790" width="517" height="66" fill="#fff"/>
+    <text x="1032" y="817" font-size="10" font-weight="600" class="ink">一封写给秋天的短信</text>
+    <text x="1032" y="836" font-size="8" fill="#a0a49b">ID: 1020</text>
+    <rect x="1251" y="809" width="44" height="20" rx="10" fill="#f4eee4"/>
+    <text x="1262" y="823" font-size="8" fill="#917b56">阅读</text>
+    <circle cx="1360" cy="819" r="3" fill="#77956f"/>
+    <text x="1370" y="823" font-size="9" fill="#66815f">已发布</text>
+    <text x="1415" y="823" font-size="8" fill="#858a80">09.30 08:14</text>
+    <text x="1501" y="823" font-size="9" fill="#6d8068">编辑</text>
+    <line x1="1018" y1="856" x2="1535" y2="856" stroke="#efefe9"/>
+
+    <text x="1018" y="888" font-size="9" fill="#92988f">共 24 篇文章</text>
+    <rect x="1433" y="870" width="29" height="26" rx="5" fill="#455a45"/>
+    <text x="1444" y="888" font-size="10" font-weight="600" fill="#fff">1</text>
+    <rect x="1468" y="870" width="29" height="26" rx="5" fill="#fff" stroke="#e8e9e3"/>
+    <text x="1479" y="888" font-size="10" fill="#71786e">2</text>
+    <rect x="1503" y="870" width="29" height="26" rx="5" fill="#fff" stroke="#e8e9e3"/>
+    <text x="1514" y="888" font-size="10" fill="#71786e">›</text>
+    <rect x="1018" y="924" width="517" height="1" fill="#eeeee9"/>
+    <text x="1018" y="951" font-size="9" fill="#92988f">快捷提示</text>
+    <rect x="1018" y="965" width="517" height="58" rx="7" fill="#f1f3ee"/>
+    <circle cx="1040" cy="994" r="9" fill="#dfe7d9"/>
+    <text x="1037" y="998" font-size="10" font-weight="700" fill="#60765b">i</text>
+    <text x="1058" y="990" font-size="9" font-weight="600" fill="#5b6857">发布前检查标题、标签与文章状态</text>
+    <text x="1058" y="1007" font-size="8" fill="#858d80">文章发布后会显示在读者端首页和对应标签列表中。</text>
+  </g>
+</svg>

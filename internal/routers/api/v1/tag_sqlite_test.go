@@ -3,7 +3,7 @@ package v1_test
 import (
 	"blog-server/global"
 	"blog-server/internal/model"
-	"blog-server/internal/routers"
+	adminrouter "blog-server/internal/routers/admin"
 	"blog-server/pkg/logger"
 	"net/http"
 	"net/http/httptest"
@@ -37,6 +37,9 @@ func TestUpdateTagUsesURIIDWithSQLite(t *testing.T) {
 	previousDB, previousLogger := global.DBEngine, global.Logger
 	global.DBEngine = db
 	global.Logger = logger.NewLogger(httptest.NewRecorder(), "", 0)
+	t.Setenv("BLOG_ADMIN_USERNAME", "api-test-admin")
+	t.Setenv("BLOG_ADMIN_PASSWORD", "api-test-password")
+	t.Setenv("BLOG_ADMIN_SESSION_SECRET", "api-test-session-secret-at-least-32-bytes")
 	t.Cleanup(func() {
 		global.DBEngine, global.Logger = previousDB, previousLogger
 	})
@@ -50,7 +53,8 @@ func TestUpdateTagUsesURIIDWithSQLite(t *testing.T) {
 		t.Fatalf("create tag fixture: %v", err)
 	}
 
-	router := routers.NewRouter()
+	router := adminrouter.New()
+	sessionCookie := adminSessionCookie(router)
 	values := url.Values{
 		"name":        {"after"},
 		"state":       {"0"},
@@ -62,6 +66,7 @@ func TestUpdateTagUsesURIIDWithSQLite(t *testing.T) {
 		strings.NewReader(values.Encode()),
 	)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.AddCookie(sessionCookie)
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, request)
 
@@ -83,6 +88,7 @@ func TestUpdateTagUsesURIIDWithSQLite(t *testing.T) {
 		strings.NewReader(values.Encode()),
 	)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.AddCookie(sessionCookie)
 	recorder = httptest.NewRecorder()
 	router.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusBadRequest {

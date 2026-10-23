@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>纸间 · 平台管理后台</title>
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+  <main id="login-view" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <div class="brand-mark">B</div>
+      <p class="eyebrow">PLATFORM CONSOLE</p>
+      <h1>欢迎回来</h1>
+      <p class="muted">登录后管理内容、平台用户与站点</p>
+      <label>管理员账号<input name="username" autocomplete="username" required maxlength="100"></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+      <p id="login-error" class="error" role="alert"></p>
+      <button class="button primary wide" type="submit">登录后台</button>
+    </form>
+  </main>
+
+  <div id="admin-view" class="shell" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="/admin/"><span class="brand-mark small">B</span><span>平台管理</span></a>
+      <p class="nav-label">工作台</p>
+      <nav aria-label="主导航">
+        <button class="nav-item active" data-page="dashboard"><span>◫</span>数据概览</button>
+        <button class="nav-item" data-page="articles"><span>▤</span>文章管理</button>
+        <button class="nav-item" data-page="tags"><span>#</span>标签管理</button>
+        <button class="nav-item" data-page="platform"><span>⌂</span>平台总览</button>
+        <button class="nav-item" data-page="users"><span>♙</span>用户与权限</button>
+        <button class="nav-item" data-page="roles"><span>◇</span>角色管理</button>
+        <button class="nav-item" data-page="settings"><span>⚙</span>系统配置</button>
+        <button class="nav-item" data-page="sites"><span>▣</span>站点管理</button>
+        <button class="nav-item" data-page="audit"><span>◷</span>操作日志</button>
+      </nav>
+      <div class="sidebar-foot">BLOG SERVICE <span>管理控制台</span></div>
+    </aside>
+    <section class="workspace">
+      <header class="topbar">
+        <div><span class="top-label">BLOG SERVICE · PLATFORM CONSOLE</span><strong id="page-title">数据概览</strong></div>
+        <div class="user-box"><span class="avatar">A</span><span id="current-user"></span><button id="logout" class="link-button">退出</button></div>
+      </header>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <main class="content">
+        <section id="page-dashboard" class="page">
+          <div class="page-heading"><div><p class="eyebrow">OVERVIEW</p><h1>数据概览</h1><p class="muted">快速查看博客内容状态</p></div><button class="button primary" data-go="articles">管理文章 <span>→</span></button></div>
+          <div class="stat-grid">
+            <article class="stat-card"><span class="stat-icon indigo">▤</span><p>文章总数</p><strong id="stat-articles">—</strong><small>未删除文章</small></article>
+            <article class="stat-card"><span class="stat-icon green">↗</span><p>已发布</p><strong id="stat-published">—</strong><small>公开展示中</small></article>
+            <article class="stat-card"><span class="stat-icon amber">◷</span><p>草稿 / 禁用</p><strong id="stat-drafts">—</strong><small>暂未公开</small></article>
+            <article class="stat-card"><span class="stat-icon rose">#</span><p>标签数量</p><strong id="stat-tags">—</strong><small>文章分类标签</small></article>
+          </div>
+          <div class="panel welcome-panel"><div><p class="eyebrow">CONTENT STUDIO</p><h2>让好内容持续被看见</h2><p class="muted">在这里创建、编辑和发布博客文章，也可以整理文章标签。</p><button class="button dark" data-go="articles">开始管理文章 <span>→</span></button></div><div class="welcome-art" aria-hidden="true"><span></span><span></span><span></span></div></div>
+        </section>
+
+        <section id="page-articles" class="page" hidden>
+          <div class="page-heading"><div><p class="eyebrow">CONTENT</p><h1>文章管理</h1><p class="muted">创建文章、编辑内容并管理发布状态</p></div><button id="new-article" class="button primary">＋ 新建文章</button></div>
+          <div class="panel">
+            <div class="toolbar"><label class="search-field"><span>⌕</span><input id="article-search" placeholder="搜索文章标题" maxlength="100"></label><select id="article-state" aria-label="文章状态"><option value="">全部状态</option><option value="1">已发布</option><option value="0">草稿 / 禁用</option></select><button id="search-articles" class="button outline">查询</button></div>
+            <div class="table-wrap"><table><thead><tr><th>文章</th><th>标签</th><th>状态</th><th>更新时间</th><th class="actions-head">操作</th></tr></thead><tbody id="articles-body"></tbody></table><div id="articles-empty" class="empty" hidden>暂无文章，试试创建一篇新文章。</div></div>
+            <div class="pagination"><span id="articles-count"></span><div><button id="articles-prev" class="button outline small-button">上一页</button><button id="articles-next" class="button outline small-button">下一页</button></div></div>
+          </div>
+        </section>
+
+        <section id="page-tags" class="page" hidden>
+          <div class="page-heading"><div><p class="eyebrow">ORGANIZATION</p><h1>标签管理</h1><p class="muted">维护文章分类，帮助读者发现相关内容</p></div><button id="new-tag" class="button primary">＋ 新建标签</button></div>
+          <div class="panel">
+            <div class="toolbar"><label class="search-field"><span>⌕</span><input id="tag-search" placeholder="搜索标签名称" maxlength="100"></label><select id="tag-state" aria-label="标签状态"><option value="">全部状态</option><option value="1">启用</option><option value="0">停用</option></select><button id="search-tags" class="button outline">查询</button></div>
+            <div class="table-wrap"><table><thead><tr><th>标签名称</th><th>状态</th><th>创建时间</th><th class="actions-head">操作</th></tr></thead><tbody id="tags-body"></tbody></table><div id="tags-empty" class="empty" hidden>暂无标签，先创建一个标签吧。</div></div>
+            <div class="pagination"><span id="tags-count"></span><div><button id="tags-prev" class="button outline small-button">上一页</button><button id="tags-next" class="button outline small-button">下一页</button></div></div>
+          </div>
+        </section>
+
+        <section id="page-platform" class="page" hidden></section>
+        <section id="page-users" class="page" hidden></section>
+        <section id="page-roles" class="page" hidden></section>
+        <section id="page-settings" class="page" hidden></section>
+        <section id="page-sites" class="page" hidden></section>
+        <section id="page-audit" class="page" hidden></section>
+      </main>
+    </section>
+  </div>
+
+  <dialog id="article-dialog" class="editor-dialog">
+    <form id="article-form">
+      <div class="dialog-heading"><div><p class="eyebrow">ARTICLE EDITOR</p><h2 id="article-dialog-title">新建文章</h2></div><button type="button" class="icon-button" data-close="article-dialog" aria-label="关闭">×</button></div>
+      <input type="hidden" name="id">
+      <label>文章标题<input name="title" required minlength="2" maxlength="100" placeholder="输入文章标题"></label>
+      <label>文章摘要<textarea name="desc" maxlength="255" rows="2" placeholder="简要介绍文章内容"></textarea></label>
+      <div class="form-row"><label>所属标签<select name="tag_id" required></select></label><label>发布状态<select name="state"><option value="1">已发布</option><option value="0">保存为草稿</option></select></label></div>
+      <label>封面图片地址<input name="cover_image_url" type="url" maxlength="255" placeholder="https://example.com/cover.jpg"></label>
+      <label>正文内容<textarea name="content" required rows="9" placeholder="支持纯文本或 Markdown 内容"></textarea></label>
+      <p id="article-form-error" class="error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button outline" data-close="article-dialog">取消</button><button class="button primary" type="submit">保存文章</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="tag-dialog" class="editor-dialog compact-dialog">
+    <form id="tag-form">
+      <div class="dialog-heading"><div><p class="eyebrow">TAG EDITOR</p><h2 id="tag-dialog-title">新建标签</h2></div><button type="button" class="icon-button" data-close="tag-dialog" aria-label="关闭">×</button></div>
+      <input type="hidden" name="id">
+      <label>标签名称<input name="name" required maxlength="100" placeholder="例如：Go"></label>
+      <label>标签状态<select name="state"><option value="1">启用</option><option value="0">停用</option></select></label>
+      <p id="tag-form-error" class="error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button outline" data-close="tag-dialog">取消</button><button class="button primary" type="submit">保存标签</button></div>
+    </form>
+  </dialog>
+  <script src="/admin/app.js" defer></script>
+</body>
+</html>

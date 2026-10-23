@@ -48,6 +48,16 @@ func (t Tag) List(c *gin.Context) {
 
 	svc := service.New(c.Request.Context())
 	pager := app.Pager{Page: app.GetPage(c), PageSize: app.GetPageSize(c)}
+	if param.AllStates {
+		tags, totalRows, err := svc.GetTagListWithAnyState(&param, &pager)
+		if err != nil {
+			global.Logger.Errorf(c, "svc.GetTagListWithAnyState err: %v", err)
+			response.ToErrorResponse(errcode.ErrorGetTagListFail)
+			return
+		}
+		response.ToResponseList(tags, totalRows)
+		return
+	}
 	totalRows, err := svc.CountTag(&service.ConutTagRequest{Name: param.Name, State: param.State})
 	if err != nil {
 		global.Logger.Errorf(c, "svc.CountTag err: %v", err)
@@ -63,6 +73,34 @@ func (t Tag) List(c *gin.Context) {
 
 	response.ToResponseList(tags, totalRows)
 
+}
+
+func (t Tag) PublicList(c *gin.Context) {
+	param := service.GetTagListRequest{}
+	response := app.NewResponse(c)
+	valid, errs := app.BindAndValid(c, &param)
+	if !valid {
+		global.Logger.Errorf(c, "bind public tag list params err: %v", errs)
+		response.ToErrorResponse(errcode.InvalidParams.WithDetails(errs.Errors()...))
+		return
+	}
+	param.State = 1
+	param.AllStates = false
+	svc := service.New(c.Request.Context())
+	pager := app.Pager{Page: app.GetPage(c), PageSize: app.GetPageSize(c)}
+	totalRows, err := svc.CountTag(&service.ConutTagRequest{Name: param.Name, State: 1})
+	if err != nil {
+		global.Logger.Errorf(c, "Count public tags err: %v", err)
+		response.ToErrorResponse(errcode.ErrorCountTagFail)
+		return
+	}
+	tags, err := svc.GetTagList(&param, &pager)
+	if err != nil {
+		global.Logger.Errorf(c, "Get public tag list err: %v", err)
+		response.ToErrorResponse(errcode.ErrorGetTagListFail)
+		return
+	}
+	response.ToResponseList(tags, totalRows)
 }
 
 // @Summary 创建标签

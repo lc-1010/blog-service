@@ -28,7 +28,7 @@
 - `articles`、`categories`、`article_categories`
 - `products`、`orders`、`order_items`
 
-该数据集数据库用于本地演示和导入测试，不是生产迁移。生产 MySQL schema/API 尚需单独实施与审查。
+SQLite 数据库是本地演示数据源。运行 MySQL 导入后，数据写入 `blog` 数据库内独立的 `demo_*` 表，不会写入线上博客的 `blog_article` 或 `blog_tag`，也不会把没有密码凭据的合成会员变成可登录账号。演示交易记录不是真实订单，不能用于业务结算。
 
 ## 导入和测试
 
@@ -36,8 +36,20 @@
 go test ./...
 python3 datasets/import_datasets.py --db datasets/blog-demo.sqlite --max-rows 10000
 python3 -m unittest discover -s datasets -p 'test_*.py' -v
+BLOG_DB_PASSWORD='数据库密码' python3 scripts/import_sqlite_to_mysql.py
 ```
 
 默认不覆盖已有数据库；确认需要重建时加 `--replace`。也可通过 `--retail-csv` 和 `--tang-json` 使用本地文件。
 
+MySQL 导入默认读取 `datasets/blog-demo.sqlite`，并使用 `BLOG_DB_HOST`、
+`BLOG_DB_USERNAME`、`BLOG_DB_PASSWORD`、`BLOG_DB_NAME` 配置连接；没有设置密码时会安全提示输入。首次运行会创建
+[`20261023_demo_dataset_mysql.sql`](../migrations/20261023_demo_dataset_mysql.sql)
+定义的演示表。导入按源 ID 忽略重复记录，可重复执行；不会清空或覆盖已有演示记录。若需要刷新演示数据，请先备份并手动清空所有 `demo_*` 表，再重新导入。
+
 Python 导入器测试使用内存 SQLite 和合成小样本，不访问网络、不使用真实顾客标识。Go DAO/service/API 集成测试也使用独立的内存 SQLite 数据库，不连接 MySQL。脚本依赖 Python 标准库。
+
+SQLite 到 MySQL 转换器的单元测试：
+
+```sh
+python3 -m unittest discover -s scripts -p 'test_*.py' -v
+```

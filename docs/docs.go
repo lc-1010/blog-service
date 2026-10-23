@@ -21,30 +21,50 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "获取多篇文章",
+                "summary": "分页查询文章",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "文章名",
-                        "name": "name",
+                        "description": "标题关键字",
+                        "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "标签ID",
+                        "description": "标签 ID",
                         "name": "tag_id",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            0,
+                            1
+                        ],
+                        "type": "integer",
+                        "default": 1,
+                        "description": "状态",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "管理员查询全部状态",
+                        "name": "all_states",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
                         "type": "integer",
                         "description": "页码",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
                         "description": "每页数量",
-                        "name": "paage_size",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -62,44 +82,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "请求错误",
-                        "schema": {
-                            "$ref": "#/definitions/errcode.Error"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "更新文章",
-                "parameters": [
-                    {
-                        "description": "更新文章",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateArticle"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "请求错误",
-                        "schema": {
-                            "$ref": "#/definitions/errcode.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "请求错误",
+                        "description": "内部错误",
                         "schema": {
                             "$ref": "#/definitions/errcode.Error"
                         }
@@ -107,14 +90,17 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "summary": "创建文章",
                 "parameters": [
                     {
-                        "description": "创建文章",
-                        "name": "requset",
+                        "description": "文章内容",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -149,11 +135,11 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "获取单独文章",
+                "summary": "获取单篇文章",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "文章id",
+                        "description": "文章 ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -172,8 +158,67 @@ const docTemplate = `{
                             "$ref": "#/definitions/errcode.Error"
                         }
                     },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
                     "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "全量更新文章",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "文章内容",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateArticle"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/model.BlogArticle"
+                        }
+                    },
+                    "400": {
                         "description": "请求错误",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
                         "schema": {
                             "$ref": "#/definitions/errcode.Error"
                         }
@@ -184,29 +229,24 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "删除文章",
+                "summary": "软删除文章",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "文章id",
+                        "description": "文章 ID",
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "状态",
-                        "name": "state",
-                        "in": "body",
-                        "schema": {
-                            "type": "integer"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "成功",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -215,8 +255,69 @@ const docTemplate = `{
                             "$ref": "#/definitions/errcode.Error"
                         }
                     },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
                     "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/articles/{id}/state": {
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "更新文章状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "文章状态",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateArticleState"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/model.BlogArticle"
+                        }
+                    },
+                    "400": {
                         "description": "请求错误",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "$ref": "#/definitions/errcode.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
                         "schema": {
                             "$ref": "#/definitions/errcode.Error"
                         }
@@ -431,6 +532,9 @@ const docTemplate = `{
         "model.BlogArticle": {
             "type": "object",
             "properties": {
+                "content": {
+                    "type": "string"
+                },
                 "cover_image_url": {
                     "description": "封面图片地址",
                     "type": "string"
@@ -469,6 +573,9 @@ const docTemplate = `{
                 },
                 "state": {
                     "description": "状态 0 禁用，1 启用",
+                    "type": "integer"
+                },
+                "tag_id": {
                     "type": "integer"
                 },
                 "title": {
@@ -517,34 +624,43 @@ const docTemplate = `{
         },
         "model.CreateArticle": {
             "type": "object",
+            "required": [
+                "content",
+                "created_by",
+                "tag_id",
+                "title"
+            ],
             "properties": {
                 "content": {
-                    "description": "文章内容\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "cover_image_url": {
-                    "description": "封面图片地址\"` + "`" + `",
                     "type": "string"
                 },
                 "created_by": {
-                    "description": "创建者\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 },
                 "desc": {
-                    "description": "文章简述\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "state": {
-                    "description": "状态\"` + "`" + `",
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 },
                 "tag_id": {
-                    "description": "标签ID",
                     "type": "integer"
                 },
                 "title": {
-                    "description": "文章标题\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         },
@@ -564,38 +680,57 @@ const docTemplate = `{
         },
         "model.UpdateArticle": {
             "type": "object",
+            "required": [
+                "content",
+                "modified_by",
+                "tag_id",
+                "title"
+            ],
             "properties": {
                 "content": {
-                    "description": "文章内容\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "cover_image_url": {
-                    "description": "封面图片地址\"` + "`" + `",
-                    "type": "string"
-                },
-                "created_by": {
-                    "description": "创建者\"` + "`" + `",
                     "type": "string"
                 },
                 "desc": {
-                    "description": "文章简述\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "modified_by": {
-                    "description": "\"修改人\"",
-                    "type": "string"
-                },
-                "state": {
-                    "description": "状态\"` + "`" + `",
-                    "type": "integer"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 },
                 "tag_id": {
-                    "description": "标签ID",
                     "type": "integer"
                 },
                 "title": {
-                    "description": "文章标题\"` + "`" + `",
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                }
+            }
+        },
+        "model.UpdateArticleState": {
+            "type": "object",
+            "required": [
+                "modified_by",
+                "state"
+            ],
+            "properties": {
+                "modified_by": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "state": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 }
             }
         },
@@ -637,7 +772,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "博客",
-	Description:      "博客后台",
+	Description:      "博客公开服务",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

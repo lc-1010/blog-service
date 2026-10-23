@@ -21,6 +21,8 @@ definitions:
     type: object
   model.BlogArticle:
     properties:
+      content:
+        type: string
       cover_image_url:
         description: 封面图片地址
         type: string
@@ -50,6 +52,8 @@ definitions:
         type: integer
       state:
         description: 状态 0 禁用，1 启用
+        type: integer
+      tag_id:
         type: integer
       title:
         type: string
@@ -85,26 +89,33 @@ definitions:
   model.CreateArticle:
     properties:
       content:
-        description: 文章内容"`
+        minLength: 1
         type: string
       cover_image_url:
-        description: 封面图片地址"`
         type: string
       created_by:
-        description: 创建者"`
+        maxLength: 100
+        minLength: 2
         type: string
       desc:
-        description: 文章简述"`
+        maxLength: 255
         type: string
       state:
-        description: 状态"`
+        enum:
+        - 0
+        - 1
         type: integer
       tag_id:
-        description: 标签ID
         type: integer
       title:
-        description: 文章标题"`
+        maxLength: 100
+        minLength: 2
         type: string
+    required:
+    - content
+    - created_by
+    - tag_id
+    - title
     type: object
   model.TagSwagger:
     properties:
@@ -118,29 +129,43 @@ definitions:
   model.UpdateArticle:
     properties:
       content:
-        description: 文章内容"`
+        minLength: 1
         type: string
       cover_image_url:
-        description: 封面图片地址"`
-        type: string
-      created_by:
-        description: 创建者"`
         type: string
       desc:
-        description: 文章简述"`
+        maxLength: 255
         type: string
       modified_by:
-        description: '"修改人"'
+        maxLength: 100
+        minLength: 2
         type: string
-      state:
-        description: 状态"`
-        type: integer
       tag_id:
-        description: 标签ID
         type: integer
       title:
-        description: 文章标题"`
+        maxLength: 100
+        minLength: 2
         type: string
+    required:
+    - content
+    - modified_by
+    - tag_id
+    - title
+    type: object
+  model.UpdateArticleState:
+    properties:
+      modified_by:
+        maxLength: 100
+        minLength: 2
+        type: string
+      state:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - modified_by
+    - state
     type: object
   model.UpdateTagRequest:
     properties:
@@ -165,28 +190,43 @@ definitions:
     type: object
 info:
   contact: {}
-  description: 博客后台
+  description: 博客公开服务
   title: 博客
   version: "1.0"
 paths:
   /api/v1/articles:
     get:
       parameters:
-      - description: 文章名
+      - description: 标题关键字
         in: query
-        name: name
+        name: title
         type: string
-      - description: 标签ID
+      - description: 标签 ID
         in: query
         name: tag_id
         type: integer
+      - default: 1
+        description: 状态
+        enum:
+        - 0
+        - 1
+        in: query
+        name: state
+        type: integer
+      - description: 管理员查询全部状态
+        in: query
+        name: all_states
+        type: boolean
       - description: 页码
         in: query
+        minimum: 1
         name: page
         type: integer
       - description: 每页数量
         in: query
-        name: paage_size
+        maximum: 100
+        minimum: 1
+        name: page_size
         type: integer
       produces:
       - application/json
@@ -200,15 +240,17 @@ paths:
           schema:
             $ref: '#/definitions/errcode.Error'
         "500":
-          description: 请求错误
+          description: 内部错误
           schema:
             $ref: '#/definitions/errcode.Error'
-      summary: 获取多篇文章
+      summary: 分页查询文章
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: 创建文章
+      - description: 文章内容
         in: body
-        name: requset
+        name: request
         required: true
         schema:
           $ref: '#/definitions/model.CreateArticle'
@@ -228,62 +270,39 @@ paths:
           schema:
             $ref: '#/definitions/errcode.Error'
       summary: 创建文章
-    put:
-      parameters:
-      - description: 更新文章
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.UpdateArticle'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            type: string
-        "400":
-          description: 请求错误
-          schema:
-            $ref: '#/definitions/errcode.Error'
-        "500":
-          description: 请求错误
-          schema:
-            $ref: '#/definitions/errcode.Error'
-      summary: 更新文章
   /api/v1/articles/{id}:
     delete:
       parameters:
-      - description: 文章id
+      - description: 文章 ID
         in: path
         name: id
         required: true
         type: integer
-      - description: 状态
-        in: body
-        name: state
-        schema:
-          type: integer
       produces:
       - application/json
       responses:
         "200":
           description: 成功
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: 请求错误
           schema:
             $ref: '#/definitions/errcode.Error'
-        "500":
-          description: 请求错误
+        "404":
+          description: 文章不存在
           schema:
             $ref: '#/definitions/errcode.Error'
-      summary: 删除文章
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 软删除文章
     get:
       parameters:
-      - description: 文章id
+      - description: 文章 ID
         in: path
         name: id
         required: true
@@ -299,11 +318,86 @@ paths:
           description: 请求错误
           schema:
             $ref: '#/definitions/errcode.Error'
+        "404":
+          description: 文章不存在
+          schema:
+            $ref: '#/definitions/errcode.Error'
         "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 获取单篇文章
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 文章 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 文章内容
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateArticle'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogArticle'
+        "400":
           description: 请求错误
           schema:
             $ref: '#/definitions/errcode.Error'
-      summary: 获取单独文章
+        "404":
+          description: 文章不存在
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 全量更新文章
+  /api/v1/articles/{id}/state:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 文章 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 文章状态
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateArticleState'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/model.BlogArticle'
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "404":
+          description: 文章不存在
+          schema:
+            $ref: '#/definitions/errcode.Error'
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/errcode.Error'
+      summary: 更新文章状态
   /api/v1/tags:
     get:
       parameters:
