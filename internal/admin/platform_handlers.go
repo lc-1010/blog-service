@@ -2,8 +2,10 @@ package admin
 
 import (
 	"blog-server/global"
+	"blog-server/internal/membership"
 	"blog-server/internal/platform"
 	"errors"
+	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -38,10 +40,13 @@ var allowedPermissions = map[string]struct{}{
 func (h Handler) registerPlatformRoutes(router *gin.Engine) {
 	group := router.Group("/api/v1/admin/platform")
 	group.Use(h.AuthRequired())
+	group.Use(h.AuditMutations())
 	group.GET("/dashboard", h.RequirePermission(platform.PermissionAuditRead), h.PlatformDashboard)
 	group.GET("/users", h.RequirePermission(platform.PermissionUsersManage), h.ListUsers)
 	group.POST("/users", h.RequirePermission(platform.PermissionUsersManage), h.CreateUser)
 	group.PUT("/users/:id", h.RequirePermission(platform.PermissionUsersManage), h.UpdateUser)
+	group.GET("/members", h.RequirePermission(platform.PermissionUsersManage), h.ListMembers)
+	group.PATCH("/members/:id", h.RequirePermission(platform.PermissionUsersManage), h.UpdateMember)
 	group.GET("/roles", h.RequireAnyPermission(platform.PermissionUsersManage, platform.PermissionRolesManage), h.ListRoles)
 	group.POST("/roles", h.RequirePermission(platform.PermissionRolesManage), h.CreateRole)
 	group.PUT("/roles/:id", h.RequirePermission(platform.PermissionRolesManage), h.UpdateRole)
@@ -55,11 +60,92 @@ func (h Handler) registerPlatformRoutes(router *gin.Engine) {
 	group.GET("/audit-logs", h.RequirePermission(platform.PermissionAuditRead), h.ListAuditLogs)
 }
 
+func (h Handler) ListMembers(c *gin.Context) {
+	db, ok := platformDB(c)
+	if !ok {
+		return
+	}
+	page, pageSize := boundedPage(c.Query("page"), c.Query("page_size"))
+	query := db.Model(&membership.Member{}).Where("is_del = ?", 0)
+	if username := strings.TrimSpace(c.Query("username")); username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
+	if memberType := strings.TrimSpace(c.Query("member_type")); memberType != "" {
+		if memberType != "member" && memberType != "author" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid member type"})
+			return
+		}
+		query = query.Where("member_type = ?", memberType)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		writePlatformError(c, err)
+		return
+	}
+	var members []membership.Member
+	if err := query.Order("id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&members).Error; err != nil {
+		writePlatformError(c, err)
+		return
+	}
+	type memberSummary struct {
+		ID          uint32 `json:"id"`
+		Username    string `json:"username"`
+		DisplayName string `json:"display_name"`
+		MemberType  string `json:"member_type"`
+		State       uint8  `json:"state"`
+		CreatedOn   uint32 `json:"created_on"`
+	}
+	result := make([]memberSummary, 0, len(members))
+	for _, member := range members {
+		result = append(result, memberSummary{
+			ID: member.ID, Username: member.Username, DisplayName: member.DisplayName,
+			MemberType: member.MemberType, State: member.State, CreatedOn: member.CreatedOn,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"list":  result,
+		"pager": gin.H{"page": page, "page_size": pageSize, "total_rows": total},
+	})
+}
+
+func (h Handler) UpdateMember(c *gin.Context) {
+	id, ok := pathID(c)
+	if !ok {
+		return
+	}
+	var input struct {
+		MemberType string `json:"member_type"`
+		State      uint8  `json:"state"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil ||
+		input.MemberType != "member" && input.MemberType != "author" ||
+		input.State > 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "member_type must be member or author and state must be 0 or 1"})
+		return
+	}
+	db, ok := platformDB(c)
+	if !ok {
+		return
+	}
+	result := db.Model(&membership.Member{}).
+		Where("id = ? AND is_del = ?", id, 0).
+		Updates(map[string]any{"member_type": input.MemberType, "state": input.State})
+	if result.Error != nil {
+		writePlatformError(c, result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "member not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "member updated"})
+}
+
 func (h Handler) RequirePermission(permission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		permissions, ok := c.Get("admin_permissions")
 		list, isList := permissions.([]string)
-		if !ok || !isList || hasPermission(list, "*") || hasPermission(list, permission) {
+		if ok && isList && hasPermission(list, permission) {
 			c.Next()
 			return
 		}
@@ -101,21 +187,23 @@ func (h Handler) PlatformDashboard(c *gin.Context) {
 		where string
 		dest  *int64
 	}{
-		{&platform.User{}, "", &result.Users},
-		{&platform.User{}, "state = ?", &result.ActiveUsers},
-		{&platform.Role{}, "", &result.Roles},
-		{&platform.Site{}, "state = ?", &result.Sites},
-		{&platform.AuditLog{}, "created_on >= ?", &result.Operations},
-		{&platform.AuditLog{}, "created_on >= ? AND status >= ?", &result.Failures},
+		{&platform.User{}, "is_del = ?", &result.Users},
+		{&platform.User{}, "is_del = ? AND state = ?", &result.ActiveUsers},
+		{&platform.Role{}, "is_del = ?", &result.Roles},
+		{&platform.Site{}, "is_del = ? AND state = ?", &result.Sites},
+		{&platform.AuditLog{}, "is_del = ? AND created_on >= ?", &result.Operations},
+		{&platform.AuditLog{}, "is_del = ? AND created_on >= ? AND status >= ?", &result.Failures},
 	} {
 		count := db.Model(query.model)
 		switch query.where {
-		case "state = ?":
-			count = count.Where(query.where, 1)
-		case "created_on >= ?":
-			count = count.Where(query.where, time.Now().AddDate(0, 0, -7).Unix())
-		case "created_on >= ? AND status >= ?":
-			count = count.Where(query.where, time.Now().AddDate(0, 0, -7).Unix(), 400)
+		case "is_del = ?":
+			count = count.Where(query.where, 0)
+		case "is_del = ? AND state = ?":
+			count = count.Where(query.where, 0, 1)
+		case "is_del = ? AND created_on >= ?":
+			count = count.Where(query.where, 0, time.Now().AddDate(0, 0, -7).Unix())
+		case "is_del = ? AND created_on >= ? AND status >= ?":
+			count = count.Where(query.where, 0, time.Now().AddDate(0, 0, -7).Unix(), 400)
 		}
 		if err := count.Count(query.dest).Error; err != nil {
 			writePlatformError(c, err)
@@ -131,7 +219,7 @@ func (h Handler) ListUsers(c *gin.Context) {
 		return
 	}
 	var users []platform.User
-	if err := db.Order("id DESC").Limit(500).Find(&users).Error; err != nil {
+	if err := db.Where("is_del = ?", 0).Order("id DESC").Limit(500).Find(&users).Error; err != nil {
 		writePlatformError(c, err)
 		return
 	}
@@ -170,6 +258,10 @@ func (h Handler) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "username, display_name, password (12-72 characters), and role_id are required"})
 		return
 	}
+	if strings.TrimSpace(input.DisplayName) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "display_name is required"})
+		return
+	}
 	db, ok := platformDB(c)
 	if !ok {
 		return
@@ -200,7 +292,6 @@ func (h Handler) CreateUser(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "user.create", user.Username, http.StatusCreated)
 	c.JSON(http.StatusCreated, gin.H{"id": user.ID, "username": user.Username})
 }
 
@@ -217,6 +308,10 @@ func (h Handler) UpdateUser(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&input); err != nil || len(input.DisplayName) > 100 || input.State > 1 || (input.Password != "" && (len(input.Password) < 12 || len(input.Password) > 72)) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid user update"})
+		return
+	}
+	if strings.TrimSpace(input.DisplayName) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "display_name is required"})
 		return
 	}
 	if currentUserID(c) == id {
@@ -255,7 +350,6 @@ func (h Handler) UpdateUser(c *gin.Context) {
 		writePlatformError(c, result.Error)
 		return
 	}
-	h.audit(c, "user.update", "user:"+c.Param("id"), http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "user updated"})
 }
 
@@ -309,7 +403,6 @@ func (h Handler) CreateRole(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "role.create", role.Name, http.StatusCreated)
 	c.JSON(http.StatusCreated, gin.H{"id": role.ID})
 }
 
@@ -354,7 +447,6 @@ func (h Handler) UpdateRole(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "role.update", role.Name, http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "role updated"})
 }
 
@@ -377,7 +469,7 @@ func (h Handler) DeleteRole(c *gin.Context) {
 		return
 	}
 	var users int64
-	if err := db.Model(&platform.User{}).Where("role_id = ?", id).Count(&users).Error; err != nil {
+	if err := db.Model(&platform.User{}).Where("role_id = ? AND is_del = ?", id, 0).Count(&users).Error; err != nil {
 		writePlatformError(c, err)
 		return
 	}
@@ -389,7 +481,6 @@ func (h Handler) DeleteRole(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "role.delete", role.Name, http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "role deleted"})
 }
 
@@ -399,7 +490,7 @@ func (h Handler) GetSettings(c *gin.Context) {
 		return
 	}
 	var settings []platform.Setting
-	if err := db.Order("setting_key ASC").Find(&settings).Error; err != nil {
+	if err := db.Where("is_del = ?", 0).Order("setting_key ASC").Find(&settings).Error; err != nil {
 		writePlatformError(c, err)
 		return
 	}
@@ -429,13 +520,19 @@ func (h Handler) UpdateSettings(c *gin.Context) {
 		if key == "site_url" && value != "" {
 			parsed, err := url.ParseRequestURI(value)
 			if err != nil || parsed.Host == "" || parsed.Scheme != "http" && parsed.Scheme != "https" {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid site URL or support email"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid site URL"})
 				return
 			}
 		}
 		if key == "support_email" && value != "" {
 			if _, err := mail.ParseAddress(value); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid support email"})
+				return
+			}
+		}
+		if key == "timezone" && value != "" {
+			if _, err := time.LoadLocation(value); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid time zone"})
 				return
 			}
 		}
@@ -461,7 +558,6 @@ func (h Handler) UpdateSettings(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "settings.update", "platform settings", http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }
 
@@ -471,7 +567,7 @@ func (h Handler) ListSites(c *gin.Context) {
 		return
 	}
 	var sites []platform.Site
-	if err := db.Order("id ASC").Limit(200).Find(&sites).Error; err != nil {
+	if err := db.Where("is_del = ?", 0).Order("id ASC").Limit(200).Find(&sites).Error; err != nil {
 		writePlatformError(c, err)
 		return
 	}
@@ -505,7 +601,6 @@ func (h Handler) CreateSite(c *gin.Context) {
 		writePlatformError(c, err)
 		return
 	}
-	h.audit(c, "site.create", site.Domain, http.StatusCreated)
 	c.JSON(http.StatusCreated, gin.H{"id": site.ID})
 }
 
@@ -545,7 +640,6 @@ func (h Handler) UpdateSite(c *gin.Context) {
 		writePlatformError(c, result.Error)
 		return
 	}
-	h.audit(c, "site.update", "site:"+c.Param("id"), http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "site updated"})
 }
 
@@ -558,7 +652,7 @@ func (h Handler) DeleteSite(c *gin.Context) {
 	if !ok {
 		return
 	}
-	result := db.Delete(&platform.Site{}, id)
+	result := db.Where("is_del = ?", 0).Delete(&platform.Site{}, id)
 	if result.Error != nil {
 		writePlatformError(c, result.Error)
 		return
@@ -567,7 +661,6 @@ func (h Handler) DeleteSite(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "site not found"})
 		return
 	}
-	h.audit(c, "site.delete", "site:"+c.Param("id"), http.StatusOK)
 	c.JSON(http.StatusOK, gin.H{"message": "site deleted"})
 }
 
@@ -577,7 +670,7 @@ func (h Handler) ListAuditLogs(c *gin.Context) {
 		return
 	}
 	page, pageSize := boundedPage(c.Query("page"), c.Query("page_size"))
-	query := db.Model(&platform.AuditLog{})
+	query := db.Model(&platform.AuditLog{}).Where("is_del = ?", 0)
 	if username := strings.TrimSpace(c.Query("username")); username != "" {
 		query = query.Where("username = ?", username)
 	}
@@ -598,16 +691,6 @@ func (h Handler) ListAuditLogs(c *gin.Context) {
 		"list":  logs,
 		"pager": gin.H{"page": page, "page_size": pageSize, "total_rows": total},
 	})
-}
-
-func (h Handler) audit(c *gin.Context, action, resource string, status int) {
-	db := global.DBEngine
-	if db == nil {
-		return
-	}
-	if err := platform.RecordAudit(db, currentUsername(c), action, resource, c.Request.Method, c.ClientIP(), status); err != nil && global.Logger != nil {
-		global.Logger.Errorf(c, "record platform audit log err: %v", err)
-	}
 }
 
 func platformDB(c *gin.Context) (*gorm.DB, bool) {
@@ -631,7 +714,7 @@ func writePlatformError(c *gin.Context, err error) {
 
 func roleMap(db *gorm.DB) (map[uint32]platform.Role, error) {
 	var roles []platform.Role
-	if err := db.Find(&roles).Error; err != nil {
+	if err := db.Where("is_del = ?", 0).Find(&roles).Error; err != nil {
 		return nil, err
 	}
 	result := make(map[uint32]platform.Role, len(roles))
@@ -680,6 +763,9 @@ func hasPermission(permissions []string, required string) bool {
 }
 
 func validUsername(username string) bool {
+	if username != strings.TrimSpace(username) {
+		return false
+	}
 	username = strings.TrimSpace(username)
 	if len(username) < 3 || len(username) > 100 {
 		return false
@@ -719,8 +805,38 @@ func validSite(name, domain, description string, state uint8) bool {
 	}
 	normalized := normalizeDomain(domain)
 	parsed, err := url.Parse("https://" + normalized)
-	return err == nil && parsed.Host != "" && parsed.Path == "" && parsed.RawQuery == "" &&
-		parsed.Fragment == "" && parsed.User == nil && !strings.ContainsAny(parsed.Host, " /\\")
+	if err != nil || parsed.Host == "" || parsed.Path != "" || parsed.RawQuery != "" ||
+		parsed.Fragment != "" || parsed.User != nil || strings.ContainsAny(parsed.Host, " /\\") {
+		return false
+	}
+	host := parsed.Hostname()
+	if host == "" || net.ParseIP(host) == nil && !validHostname(host) {
+		return false
+	}
+	if port := parsed.Port(); port != "" {
+		number, err := strconv.Atoi(port)
+		if err != nil || number < 1 || number > 65535 {
+			return false
+		}
+	}
+	return true
+}
+
+func validHostname(host string) bool {
+	if len(host) > 253 {
+		return false
+	}
+	for _, label := range strings.Split(host, ".") {
+		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, char := range label {
+			if !(char >= 'a' && char <= 'z' || char >= '0' && char <= '9' || char == '-') {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func normalizeDomain(domain string) string {

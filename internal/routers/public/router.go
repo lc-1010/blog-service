@@ -1,6 +1,7 @@
 package public
 
 import (
+	"blog-server/internal/membership"
 	publicui "blog-server/internal/public/ui"
 	"blog-server/internal/routers"
 	v1 "blog-server/internal/routers/api/v1"
@@ -15,7 +16,9 @@ func New() *gin.Engine {
 	r := routers.NewEngine()
 	article := v1.NewArticle()
 	tags := v1.NewTag()
+	comment := v1.NewComment()
 	pingHandler := ping.NewPing()
+	membership.NewHandler().RegisterRoutes(r)
 
 	publicHTML, err := publicui.Files.ReadFile("assets/public.html")
 	if err != nil {
@@ -34,6 +37,8 @@ func New() *gin.Engine {
 	api := r.Group("/api/v1/public")
 	api.GET("/articles", article.PublicList)
 	api.GET("/articles/:id", article.PublicGet)
+	api.GET("/articles/:id/comments", comment.PublicList)
+	api.POST("/articles/:id/comments", membership.NewHandler().AuthRequired(), comment.Create)
 	api.GET("/tags", tags.PublicList)
 	return r
 }

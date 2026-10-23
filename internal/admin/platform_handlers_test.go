@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"blog-server/global"
+	"blog-server/internal/admin"
+	"blog-server/internal/membership"
 	"blog-server/internal/model"
 	"blog-server/internal/platform"
 	adminrouter "blog-server/internal/routers/admin"
@@ -33,6 +35,7 @@ func TestPlatformUsersSettingsSitesAndAudit(t *testing.T) {
 	}
 	if err := db.AutoMigrate(
 		&model.BlogTag{}, &model.BlogArticle{}, &model.BlogArticleTag{},
+		&membership.Member{}, &membership.Profile{}, &membership.Session{},
 		&platform.Role{}, &platform.User{}, &platform.Setting{}, &platform.Site{}, &platform.AuditLog{},
 	); err != nil {
 		t.Fatalf("migrate platform models: %v", err)
@@ -96,9 +99,39 @@ func TestPlatformUsersSettingsSitesAndAudit(t *testing.T) {
 		t.Fatalf("content permission status = %d, body = %s", contentAccess.Code, contentAccess.Body.String())
 	}
 
+	memberPasswordHash, err := platform.HashPassword("member-password-for-test")
+	if err != nil {
+		t.Fatalf("hash member password: %v", err)
+	}
+	member := membership.Member{
+		Username: "member01", DisplayName: "普通会员",
+		PasswordHash: memberPasswordHash, MemberType: "member", State: 1,
+	}
+	if err := db.Create(&member).Error; err != nil {
+		t.Fatalf("create member fixture: %v", err)
+	}
+	memberList := performPlatformRequest(router, rootCookie, http.MethodGet, "/api/v1/admin/platform/members?page=1&page_size=10", "")
+	if memberList.Code != http.StatusOK || bytes.Contains(memberList.Body.Bytes(), []byte(memberPasswordHash)) {
+		t.Fatalf("member list status/body = %d/%s", memberList.Code, memberList.Body.String())
+	}
+	memberUpdate := performPlatformRequest(router, rootCookie, http.MethodPatch,
+		fmt.Sprintf("/api/v1/admin/platform/members/%d", member.ID),
+		`{"member_type":"author","state":1}`)
+	if memberUpdate.Code != http.StatusOK {
+		t.Fatalf("member role update status/body = %d/%s", memberUpdate.Code, memberUpdate.Body.String())
+	}
+	var promoted membership.Member
+	if err := db.First(&promoted, member.ID).Error; err != nil || promoted.MemberType != "author" {
+		t.Fatalf("member promotion result = %+v, err = %v", promoted, err)
+	}
+
 	settings := performPlatformRequest(router, rootCookie, http.MethodPut, "/api/v1/admin/platform/settings", `{"site_name":"纸间空间","maintenance_mode":"false"}`)
 	if settings.Code != http.StatusOK {
 		t.Fatalf("update settings status = %d, body = %s", settings.Code, settings.Body.String())
+	}
+	invalidTimezone := performPlatformRequest(router, rootCookie, http.MethodPut, "/api/v1/admin/platform/settings", `{"timezone":"Invalid/Zone"}`)
+	if invalidTimezone.Code != http.StatusBadRequest {
+		t.Fatalf("invalid timezone status = %d, want %d", invalidTimezone.Code, http.StatusBadRequest)
 	}
 	settings = performPlatformRequest(router, rootCookie, http.MethodGet, "/api/v1/admin/platform/settings", "")
 	if settings.Code != http.StatusOK || !bytes.Contains(settings.Body.Bytes(), []byte("纸间空间")) {
@@ -109,14 +142,42 @@ func TestPlatformUsersSettingsSitesAndAudit(t *testing.T) {
 	if site.Code != http.StatusCreated {
 		t.Fatalf("create site status = %d, body = %s", site.Code, site.Body.String())
 	}
+	invalidSite := performPlatformRequest(router, rootCookie, http.MethodPost, "/api/v1/admin/platform/sites", `{"name":"无效站点","domain":"blog.example.com/path","description":"","state":1}`)
+	if invalidSite.Code != http.StatusBadRequest {
+		t.Fatalf("invalid site domain status = %d, want %d; body = %s", invalidSite.Code, http.StatusBadRequest, invalidSite.Body.String())
+	}
 	site = performPlatformRequest(router, rootCookie, http.MethodGet, "/api/v1/admin/platform/sites", "")
 	if site.Code != http.StatusOK || !bytes.Contains(site.Body.Bytes(), []byte("blog.example.com")) {
 		t.Fatalf("list sites status/body = %d/%s", site.Code, site.Body.String())
 	}
 
 	logs := performPlatformRequest(router, rootCookie, http.MethodGet, "/api/v1/admin/platform/audit-logs?page=1&page_size=50", "")
-	if logs.Code != http.StatusOK || !bytes.Contains(logs.Body.Bytes(), []byte("user.create")) || !bytes.Contains(logs.Body.Bytes(), []byte("settings.update")) {
+	if logs.Code != http.StatusOK || !bytes.Contains(logs.Body.Bytes(), []byte("admin/platform/users")) ||
+		!bytes.Contains(logs.Body.Bytes(), []byte("admin/platform/settings")) ||
+		!bytes.Contains(logs.Body.Bytes(), []byte(`"status":400`)) {
 		t.Fatalf("audit log response = %d, body = %s", logs.Code, logs.Body.String())
+	}
+	var userCreateAudits int64
+	if err := db.Model(&platform.AuditLog{}).Where("action = ?", "admin/platform/users").Count(&userCreateAudits).Error; err != nil {
+		t.Fatalf("count user management audit entries: %v", err)
+	}
+	if userCreateAudits != 1 {
+		t.Fatalf("user management audit entries = %d, want exactly one", userCreateAudits)
+	}
+}
+
+func TestRequirePermissionDeniesMissingPrincipal(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/protected", (admin.Handler{}).RequirePermission("content.manage"), func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	})
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/protected", nil))
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("permission status = %d, want %d", recorder.Code, http.StatusForbidden)
 	}
 }
 

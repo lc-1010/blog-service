@@ -18,6 +18,7 @@ func New() *gin.Engine {
 	r := routers.NewEngine()
 	article := v1.NewArticle()
 	tags := v1.NewTag()
+	comment := v1.NewComment()
 	adminHandler := admin.NewHandler()
 	adminHandler.RegisterRoutes(r)
 	registerUI(r)
@@ -38,6 +39,8 @@ func New() *gin.Engine {
 	content.PATCH("/articles/:id/state", article.UpdateState)
 	content.PUT("/articles/:id", article.Update)
 	content.DELETE("/articles/:id", article.Delete)
+	content.GET("/comments", comment.List)
+	content.PATCH("/comments/:id/state", comment.UpdateState)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
 }
