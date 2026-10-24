@@ -30,6 +30,24 @@ CREATE TABLE IF NOT EXISTS blog_members (
     KEY idx_blog_members_type_state (member_type, state, is_del)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+ALTER TABLE blog_members
+    ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '',
+    ADD COLUMN email_verified TINYINT UNSIGNED NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS blog_email_verification_codes (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    member_id INT UNSIGNED NOT NULL,
+    code CHAR(6) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_blog_email_verification_member (member_id),
+    CONSTRAINT fk_blog_email_verification_member
+        FOREIGN KEY (member_id) REFERENCES blog_members (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS blog_member_profiles (
     member_id INT UNSIGNED NOT NULL,
     bio TEXT NOT NULL,
@@ -54,7 +72,7 @@ CREATE TABLE IF NOT EXISTS blog_member_sessions (
         FOREIGN KEY (member_id) REFERENCES blog_members (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
+    (UNIX_TIMESTAMP(), 'system', 'allow_registration', 'false');
 INSERT IGNORE INTO blog_platform_settings
     (created_on, created_by, setting_key, value)
 VALUES

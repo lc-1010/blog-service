@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,11 +27,13 @@ const (
 
 type Member struct {
 	model.Model
-	Username     string `json:"username" gorm:"size:100;uniqueIndex"`
-	DisplayName  string `json:"display_name" gorm:"size:100"`
-	PasswordHash string `json:"-" gorm:"size:100"`
-	MemberType   string `json:"member_type" gorm:"size:20;index"`
-	State        uint8  `json:"-" gorm:"default:1;index"`
+	Username      string `json:"username" gorm:"size:100;uniqueIndex"`
+	DisplayName   string `json:"display_name" gorm:"size:100"`
+	PasswordHash  string `json:"-" gorm:"size:100"`
+	Email         string `json:"email" gorm:"size:255"`
+	EmailVerified uint8  `json:"email_verified" gorm:"default:0"`
+	MemberType    string `json:"member_type" gorm:"size:20;index"`
+	State         uint8  `json:"-" gorm:"default:1;index"`
 }
 
 func (Member) TableName() string { return "blog_members" }
@@ -54,6 +57,19 @@ type Session struct {
 
 func (Session) TableName() string { return "blog_member_sessions" }
 
+type EmailVerificationCode struct {
+	ID        uint32    `json:"-" gorm:"primaryKey"`
+	MemberID  uint32    `json:"-" gorm:"index"`
+	Code      string    `json:"-" gorm:"size:6"`
+	ExpiresAt time.Time `json:"-"`
+	UsedAt    *time.Time `json:"-"`
+	CreatedAt time.Time `json:"-"`
+}
+
+func (EmailVerificationCode) TableName() string { return "blog_email_verification_codes" }
+
+const verificationCodeExpiry = 10 * time.Minute
+
 type Handler struct {
 	db func() *gorm.DB
 }
@@ -71,6 +87,9 @@ func (h Handler) RegisterRoutes(router *gin.Engine) {
 	members.PATCH("/members/me/profile", h.AuthRequired(), h.UpdateProfile)
 	members.PATCH("/members/me/password", h.AuthRequired(), h.ChangePassword)
 	members.GET("/members/:username", h.PublicProfile)
+	// Email verification routes
+	members.POST("/members/send-verification", h.AuthRequired(), h.SendVerification)
+	members.POST("/members/verify-email", h.AuthRequired(), h.VerifyEmail)
 }
 
 func (h Handler) Register(c *gin.Context) {
@@ -96,6 +115,7 @@ func (h Handler) Register(c *gin.Context) {
 		Username    string `json:"username"`
 		DisplayName string `json:"display_name"`
 		Password    string `json:"password"`
+		Email       string `json:"email"`
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8192)
 	if err := c.ShouldBindJSON(&input); err != nil ||
@@ -116,6 +136,7 @@ func (h Handler) Register(c *gin.Context) {
 		Username:     strings.TrimSpace(input.Username),
 		DisplayName:  strings.TrimSpace(input.DisplayName),
 		PasswordHash: hash,
+		Email:        strings.TrimSpace(input.Email),
 		MemberType:   "member",
 		State:        1,
 	}
@@ -471,6 +492,93 @@ func contextValue(c *gin.Context, key string) string {
 
 func secureRequest(c *gin.Context) bool {
 	return c.Request.TLS != nil || strings.EqualFold(strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")), "https")
+}
+
+func (h Handler) SendVerification(c *gin.Context) {
+	db, ok := h.database(c)
+	if !ok {
+		return
+	}
+	memberID := currentMemberID(c)
+
+	var member Member
+	if err := db.Where("id = ? AND is_del = ?", memberID, 0).First(&member).Error; err != nil {
+		memberError(c, err)
+		return
+	}
+	if member.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "no email address on file"})
+		return
+	}
+
+	// Clean up expired or used codes for this member
+	now := time.Now()
+	db.Where("member_id = ?", memberID).Delete(EmailVerificationCode{})
+
+	code := generateVerificationCode()
+	expiry := now.Add(verificationCodeExpiry)
+
+	verification := EmailVerificationCode{
+		MemberID:  memberID,
+		Code:      code,
+		ExpiresAt: expiry,
+		CreatedAt: now,
+	}
+	if err := db.Create(&verification).Error; err != nil {
+		memberError(c, err)
+		return
+	}
+
+	// In production, send an actual email here.
+	// For now, log the verification code so it can be used in tests.
+	if global.Logger != nil {
+		global.Logger.Infof(c, "verification code for %s: %s (expires in %v)", member.Email, code, verificationCodeExpiry)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("verification code sent to %s, valid for %v", member.Email, verificationCodeExpiry)})
+}
+
+func (h Handler) VerifyEmail(c *gin.Context) {
+	db, ok := h.database(c)
+	if !ok {
+		return
+	}
+	memberID := currentMemberID(c)
+
+	var input struct {
+		Code string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request payload"})
+		return
+	}
+
+	var verification EmailVerificationCode
+	if err := db.Where("member_id = ? AND code = ? AND expires_at > ? AND used_at IS NULL",
+		memberID, input.Code, time.Now()).First(&verification).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid or expired verification code"})
+		return
+	}
+
+	// Mark the code as used
+	usedAt := time.Now()
+	db.Model(&verification).Update("used_at", usedAt)
+
+	// Mark the member's email as verified
+	db.Model(&Member{}).Where("id = ?", memberID).Update("email_verified", 1)
+
+	c.JSON(http.StatusOK, gin.H{"message": "email verified successfully"})
+}
+
+// generateVerificationCode returns a random 6-digit numeric string.
+func generateVerificationCode() string {
+	b := make([]byte, 3)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback: use a simple counter-based approach
+		return fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+	}
+	code := fmt.Sprintf("%06d", int(b[0])%100*10000+int(b[1])%100*100+int(b[2])%100)
+	return code
 }
 
 func memberError(c *gin.Context, err error) {

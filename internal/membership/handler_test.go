@@ -22,7 +22,7 @@ func TestMemberRegistrationLoginProfileAndRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open SQLite database: %v", err)
 	}
-	if err := db.AutoMigrate(&Member{}, &Profile{}, &Session{}, &platform.Setting{}); err != nil {
+	if err := db.AutoMigrate(&Member{}, &Profile{}, &Session{}, &platform.Setting{}, &EmailVerificationCode{}); err != nil {
 		t.Fatalf("migrate member tables: %v", err)
 	}
 	sqlDB, err := db.DB()
@@ -135,7 +135,7 @@ func TestMemberRegistrationValidationAndUnknownAccount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open SQLite database: %v", err)
 	}
-	if err := db.AutoMigrate(&Member{}, &Profile{}, &Session{}, &platform.Setting{}); err != nil {
+	if err := db.AutoMigrate(&Member{}, &Profile{}, &Session{}, &platform.Setting{}, &EmailVerificationCode{}); err != nil {
 		t.Fatalf("migrate member tables: %v", err)
 	}
 	sqlDB, err := db.DB()
@@ -202,5 +202,88 @@ func TestMemberResponseDoesNotExposePasswordHash(t *testing.T) {
 	}
 	if bytes.Contains(result, []byte("sensitive")) || bytes.Contains(result, []byte("password_hash")) {
 		t.Fatalf("member response exposed password data: %s", result)
+	}
+}
+
+func TestEmailVerificationFlow(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:email-verification-%p?mode=memory&cache=shared", t)), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open SQLite database: %v", err)
+	}
+	if err := db.AutoMigrate(&Member{}, &Profile{}, &Session{}, &platform.Setting{}, &EmailVerificationCode{}); err != nil {
+		t.Fatalf("migrate member tables: %v", err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("get SQL database: %v", err)
+	}
+	oldDB := global.DBEngine
+	global.DBEngine = db
+	t.Cleanup(func() {
+		global.DBEngine = oldDB
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("close SQLite database: %v", err)
+		}
+	})
+	if err := db.Create(&platform.Setting{Key: "allow_registration", Value: "true"}).Error; err != nil {
+		t.Fatalf("enable registration: %v", err)
+	}
+
+	router := gin.New()
+	NewHandler().RegisterRoutes(router)
+
+	// Register a member with email
+	register := memberRequest(router, http.MethodPost, "/api/v1/public/members/register",
+		`{"username":"emailuser","display_name":"Email User","password":"correct-long-password","email":"email@test.com"}`, nil)
+	if register.Code != http.StatusCreated {
+		t.Fatalf("registration status = %d, body = %s", register.Code, register.Body.String())
+	}
+	cookie := memberCookie(t, register)
+
+	// Request verification code
+	sendVerification := memberRequest(router, http.MethodPost, "/api/v1/public/members/send-verification", "", cookie)
+	if sendVerification.Code != http.StatusOK {
+		t.Fatalf("send verification status = %d, body = %s", sendVerification.Code, sendVerification.Body.String())
+	}
+
+	// Get the verification code from the database
+	var member Member
+	if err := db.Where("username = ?", "emailuser").First(&member).Error; err != nil {
+		t.Fatalf("load member: %v", err)
+	}
+	var verification EmailVerificationCode
+	if err := db.Where("member_id = ?", member.ID).Order("created_at DESC").First(&verification).Error; err != nil {
+		t.Fatalf("load verification code: %v", err)
+	}
+
+	// Verify with the correct code
+	verify := memberRequest(router, http.MethodPost, "/api/v1/public/members/verify-email",
+		fmt.Sprintf(`{"code":"%s"}`, verification.Code), cookie)
+	if verify.Code != http.StatusOK {
+		t.Fatalf("verify email status = %d, body = %s", verify.Code, verify.Body.String())
+	}
+
+	// Check that the member's email is now verified
+	var updatedMember Member
+	if err := db.Where("id = ?", member.ID).First(&updatedMember).Error; err != nil {
+		t.Fatalf("load updated member: %v", err)
+	}
+	if updatedMember.EmailVerified != 1 {
+		t.Fatal("member email should be verified")
+	}
+
+	// Try to verify again with the same code (should fail - code already used)
+	verifyAgain := memberRequest(router, http.MethodPost, "/api/v1/public/members/verify-email",
+		fmt.Sprintf(`{"code":"%s"}`, verification.Code), cookie)
+	if verifyAgain.Code != http.StatusUnauthorized {
+		t.Fatalf("re-verify with used code status = %d, want %d", verifyAgain.Code, http.StatusUnauthorized)
+	}
+
+	// Try to verify with an invalid code
+	verifyInvalid := memberRequest(router, http.MethodPost, "/api/v1/public/members/verify-email",
+		`{"code":"000000"}`, cookie)
+	if verifyInvalid.Code != http.StatusUnauthorized {
+		t.Fatalf("verify with invalid code status = %d, want %d", verifyInvalid.Code, http.StatusUnauthorized)
 	}
 }
